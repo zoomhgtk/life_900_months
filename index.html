@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>人生只有900个月</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+</head>
+<body>
+  <div class="header">
+    <button class="sidebar-btn" id="sidebarBtn"><i class="fa fa-bars"></i></button>
+    <button class="avatar-btn" id="avatarBtn"><i class="fa fa-user-circle"></i></button>
+  </div>
+  <div class="main">
+    <div class="months-grid" id="monthsGrid"></div>
+    <div class="footer" id="footerText"></div>
+    <div class="cell-float-card" id="cellFloatCard" hidden></div>
+  </div>
+
+  <!-- 生日输入弹窗 -->
+  <div class="modal-bg" id="birthdayModal" hidden>
+    <div class="modal">
+      <button class="close-btn" onclick="closeBirthdayModal()"><i class="fa fa-times"></i></button>
+      <h2>人生只有900个月</h2>
+      <p>每个人的一生大约只有900个月。<br>请选择你的出生年月，看看你还剩下多少个月。</p>
+      <div class="month-picker" id="customMonthPicker">
+        <select id="yearPicker"></select>
+        <span class="month-picker-label">年</span>
+        <select id="monthPicker"></select>
+        <span class="month-picker-label">月</span>
+      </div>
+      <div class="modal-actions">
+        <button onclick="saveBirthday()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 格子详情弹窗 -->
+  <div class="modal-bg" id="cellDetailModal" hidden>
+    <div class="modal" id="cellDetailContent">
+      <!-- 动态填充 -->
+    </div>
+  </div>
+
+  <!-- 侧边栏 -->
+  <div class="sidebar-bg" id="sidebarBg" hidden></div>
+  <div class="sidebar" id="sidebar" hidden>
+    <h3>人生成员</h3>
+    <div class="section">
+      <form id="addMemberForm">
+        <input class="member-title-input" type="text" id="memberTitle" placeholder="成员名称" required>
+        <div class="form-row">
+          <span class="form-label">生日</span>
+          <select id="memberYearPicker"></select>
+          <span class="form-label">年</span>
+          <select id="memberMonthPicker"></select>
+          <span class="form-label">月</span>
+        </div>
+        <label>头像/图标</label>
+        <div class="emoji-input-row">
+          <input class="emoji-input" type="text" id="memberEmoji" maxlength="2" placeholder="😀">
+          <button class="emoji-button" type="button" id="memberEmojiBtn">😀</button>
+          <emoji-picker class="emoji-picker-popover" id="memberEmojiPicker" hidden></emoji-picker>
+          <input class="image-input" type="file" id="memberImg" accept="image/*">
+        </div>
+        <button class="submit-button" type="submit">添加成员</button>
+      </form>
+      <div class="member-list" id="memberList"></div>
+    </div>
+    <h3>重要月份</h3>
+    <div class="section">
+      <form id="addEventForm">
+        <label>名称</label>
+        <input type="text" id="eventName" placeholder="如：高考、结婚..." required>
+        <div class="form-row">
+          <span class="form-label">月份</span>
+          <select id="eventYearPicker"></select>
+          <span class="form-label">年</span>
+          <select id="eventMonthPicker"></select>
+          <span class="form-label">月</span>
+        </div>
+        <label>图标/照片</label>
+        <div class="emoji-input-row">
+          <input class="emoji-input" type="text" id="eventEmoji" maxlength="2" placeholder="🎉">
+          <button class="emoji-button" type="button" id="eventEmojiBtn">🎉</button>
+          <emoji-picker class="emoji-picker-popover" id="eventEmojiPicker" hidden></emoji-picker>
+          <input class="image-input" type="file" id="eventImg" accept="image/*">
+        </div>
+        <button class="submit-button" type="submit">添加重要月份</button>
+      </form>
+      <div class="event-list" id="eventList"></div>
+    </div>
+    <button class="close-sidebar-button" onclick="closeSidebar()">关闭</button>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html> 
