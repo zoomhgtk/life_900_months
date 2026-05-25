@@ -232,7 +232,6 @@ function renderMemberList() {
     const checked = m.visible === false ? '' : 'checked';
     list.innerHTML += `
       <div class='manager-item'>
-        <button class='delete-text-btn' onclick='delMember(${i})'>删除</button>
         <button class='manager-item-main' onclick='editMember(${i})' type='button'>
           <span class='manager-item-icon'>${icon}</span>
           <span class='manager-item-copy'><b>${m.title || '未命名成员'}</b><small>${m.birthday}</small></span>
@@ -259,7 +258,20 @@ function toggleMemberVisible(idx, visible) {
   renderGrid();
 }
 function editMember(idx) {
-  alert('编辑成员将在下一阶段实现');
+  const members = loadData('members', []);
+  const member = members[idx];
+  if (!member) return;
+  showMemberForm(idx);
+  document.getElementById('memberTitle').value = member.title || '';
+  const [year, month] = (member.birthday || '').split('-');
+  document.getElementById('memberYearPicker').value = year || document.getElementById('memberYearPicker').value;
+  document.getElementById('memberMonthPicker').value = month || document.getElementById('memberMonthPicker').value;
+  memberAvatarData = member.img || '';
+  const preview = document.getElementById('memberAvatarPreview');
+  if (memberAvatarData) {
+    preview.innerHTML = `<img src='${memberAvatarData}' alt='成员头像预览'>`;
+    preview.hidden = false;
+  }
 }
 // 初始化成员年月picker
 function initMemberMonthPicker() {
@@ -278,6 +290,7 @@ function initMemberMonthPicker() {
   monthSel.value = String(now.getMonth() + 1).padStart(2, '0');
 }
 let memberAvatarData = '';
+let editingMemberIndex = null;
 document.getElementById('addMemberForm').onsubmit = function(e) {
   e.preventDefault();
   const title = document.getElementById('memberTitle').value.trim();
@@ -288,15 +301,15 @@ document.getElementById('addMemberForm').onsubmit = function(e) {
   if (!birthday) return alert('请选择生日');
   if (!memberAvatarData) return alert('请上传并裁切头像');
   let members = loadData('members', []);
-  members.push({ title, birthday, img: memberAvatarData });
+  if (editingMemberIndex === null) {
+    members.push({ title, birthday, img: memberAvatarData, visible: true });
+  } else if (members[editingMemberIndex]) {
+    members[editingMemberIndex] = { ...members[editingMemberIndex], title, birthday, img: memberAvatarData };
+  }
   saveData('members', members);
   renderMemberList();
   renderGrid();
-  document.getElementById('addMemberForm').reset();
-  memberAvatarData = '';
-  document.getElementById('memberAvatarPreview').hidden = true;
-  document.getElementById('memberAvatarPreview').innerHTML = '';
-  initMemberMonthPicker();
+  hideMemberForm();
 };
 // 事件管理
 function renderEventList() {
@@ -308,7 +321,6 @@ function renderEventList() {
     const checked = e.visible === false ? '' : 'checked';
     list.innerHTML += `
       <div class='manager-item'>
-        <button class='delete-text-btn' onclick='delEvent(${i})'>删除</button>
         <button class='manager-item-main' onclick='editEvent(${i})' type='button'>
           <span class='manager-item-icon'>${icon}</span>
           <span class='manager-item-copy'><b>${e.name || '未命名月份'}</b><small>${e.month}</small></span>
@@ -335,7 +347,15 @@ function toggleEventVisible(idx, visible) {
   renderGrid();
 }
 function editEvent(idx) {
-  alert('编辑重要月份将在下一阶段实现');
+  const events = loadData('events', []);
+  const event = events[idx];
+  if (!event) return;
+  showEventForm(idx);
+  document.getElementById('eventName').value = event.name || '';
+  const [year, month] = (event.month || '').split('-');
+  document.getElementById('eventYearPicker').value = year || document.getElementById('eventYearPicker').value;
+  document.getElementById('eventMonthPicker').value = month || document.getElementById('eventMonthPicker').value;
+  document.getElementById('eventEmoji').value = event.emoji || '';
 }
 // 初始化事件年月picker
 function initEventMonthPicker() {
@@ -353,6 +373,7 @@ function initEventMonthPicker() {
   yearSel.value = now.getFullYear();
   monthSel.value = String(now.getMonth() + 1).padStart(2, '0');
 }
+let editingEventIndex = null;
 document.getElementById('addEventForm').onsubmit = function(e) {
   e.preventDefault();
   const name = document.getElementById('eventName').value.trim();
@@ -364,16 +385,18 @@ document.getElementById('addEventForm').onsubmit = function(e) {
   if (!name || !month) return alert('请填写完整');
   const add = (img) => {
     let events = loadData('events', []);
-    events.push({ name, month, emoji, img, visible: true });
+    if (editingEventIndex === null) {
+      events.push({ name, month, emoji, img, visible: true });
+    } else if (events[editingEventIndex]) {
+      events[editingEventIndex] = { ...events[editingEventIndex], name, month, emoji, img: img || events[editingEventIndex].img || '' };
+    }
     saveData('events', events);
     renderEventList();
     renderGrid();
     hideEventForm();
-    document.getElementById('addEventForm').reset();
-    initEventMonthPicker();
   };
   if (imgFile) readFileAsDataURL(imgFile, add);
-  else add('');
+  else add(editingEventIndex === null ? '' : undefined);
 };
 
 // 成员头像裁切
@@ -513,15 +536,25 @@ function closeMemberManager() {
   memberManagerBg.hidden = true;
   hideMemberForm();
 }
-function showMemberForm() {
+function showMemberForm(idx = null) {
+  editingMemberIndex = idx;
   memberForm.hidden = false;
+  document.getElementById('submitMemberForm').innerText = idx === null ? '添加成员' : '保存成员';
+  document.getElementById('deleteMemberForm').hidden = idx === null;
+  document.getElementById('addMemberForm').reset();
+  memberAvatarData = '';
+  document.getElementById('memberAvatarPreview').hidden = true;
+  document.getElementById('memberAvatarPreview').innerHTML = '';
   initMemberMonthPicker();
 }
 function hideMemberForm() {
   memberForm.hidden = true;
+  editingMemberIndex = null;
   memberAvatarData = '';
   document.getElementById('memberAvatarPreview').hidden = true;
   document.getElementById('memberAvatarPreview').innerHTML = '';
+  document.getElementById('deleteMemberForm').hidden = true;
+  document.getElementById('submitMemberForm').innerText = '添加成员';
   document.getElementById('addMemberForm').reset();
 }
 function openEventManager() {
@@ -533,12 +566,19 @@ function closeEventManager() {
   eventManagerBg.hidden = true;
   hideEventForm();
 }
-function showEventForm() {
+function showEventForm(idx = null) {
+  editingEventIndex = idx;
   eventForm.hidden = false;
+  document.getElementById('submitEventForm').innerText = idx === null ? '添加重要月份' : '保存重要月份';
+  document.getElementById('deleteEventForm').hidden = idx === null;
+  document.getElementById('addEventForm').reset();
   initEventMonthPicker();
 }
 function hideEventForm() {
   eventForm.hidden = true;
+  editingEventIndex = null;
+  document.getElementById('deleteEventForm').hidden = true;
+  document.getElementById('submitEventForm').innerText = '添加重要月份';
   document.getElementById('addEventForm').reset();
 }
 
@@ -553,10 +593,20 @@ document.getElementById('openMemberManager').onclick = openMemberManager;
 document.getElementById('openEventManager').onclick = openEventManager;
 document.getElementById('closeMemberManager').onclick = closeMemberManager;
 document.getElementById('closeEventManager').onclick = closeEventManager;
-document.getElementById('showMemberForm').onclick = showMemberForm;
-document.getElementById('showEventForm').onclick = showEventForm;
+document.getElementById('showMemberForm').onclick = () => showMemberForm();
+document.getElementById('showEventForm').onclick = () => showEventForm();
 document.getElementById('cancelMemberForm').onclick = hideMemberForm;
 document.getElementById('cancelEventForm').onclick = hideEventForm;
+document.getElementById('deleteMemberForm').onclick = function() {
+  if (editingMemberIndex === null) return;
+  delMember(editingMemberIndex);
+  hideMemberForm();
+};
+document.getElementById('deleteEventForm').onclick = function() {
+  if (editingEventIndex === null) return;
+  delEvent(editingEventIndex);
+  hideEventForm();
+};
 document.getElementById('memberManagerBg').onclick = function(e) { if (e.target === this) closeMemberManager(); };
 document.getElementById('eventManagerBg').onclick = function(e) { if (e.target === this) closeEventManager(); };
 // 格子详情弹窗关闭
