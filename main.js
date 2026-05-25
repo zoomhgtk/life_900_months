@@ -15,7 +15,8 @@ function getMonthByIndex(birthday, idx) {
   return `${y}年${String(m).padStart(2, '0')}月`;
 }
 function formatMonthLeft(idx) {
-  return 900 - idx > 0 ? `${900 - idx} months left, enjoy` : 'Time is up, cherish every moment!';
+  const left = Math.max(900 - idx, 0);
+  return left > 0 ? `还剩 ${left} 个月` : '时间已经走完，愿每一刻都被珍惜';
 }
 function getNowMonth() {
   const d = new Date();
@@ -81,13 +82,23 @@ function isMobile() {
   return /iphone|ipad|android|mobile|phone/i.test(navigator.userAgent);
 }
 // 悬浮卡片显示/隐藏
+let floatCardTimer = null;
 function showFloatCard(html) {
   const card = document.getElementById('cellFloatCard');
+  window.clearTimeout(floatCardTimer);
   card.innerHTML = html;
   card.hidden = false;
 }
-function hideFloatCard() {
-  document.getElementById('cellFloatCard').hidden = true;
+function hideFloatCard(immediate = false) {
+  const card = document.getElementById('cellFloatCard');
+  window.clearTimeout(floatCardTimer);
+  if (immediate || !isMobile()) {
+    card.hidden = true;
+    return;
+  }
+  floatCardTimer = window.setTimeout(() => {
+    card.hidden = true;
+  }, 1400);
 }
 // 侧边栏
 function openSidebar() {
@@ -133,7 +144,7 @@ function showCellDetail(cellInfo) {
 }
 function closeCellDetail() {
   document.getElementById('cellDetailModal').hidden = true;
-  hideFloatCard();
+  hideFloatCard(true);
 }
 // 渲染主格子
 function renderGrid() {
@@ -166,7 +177,8 @@ function renderGrid() {
         else if (m.icon) icons.push(`<i class='fa ${m.icon} cell-icon'></i>`);
         if (isMobile()) {
           cell.ontouchstart = (e) => { e.preventDefault(); showCellDetail({ ...m, type: 'member', idx: i }); };
-          cell.ontouchend = cell.ontouchcancel = hideFloatCard;
+          cell.ontouchend = () => hideFloatCard();
+          cell.ontouchcancel = () => hideFloatCard(true);
         } else {
           cell.onclick = () => showCellDetail({ ...m, type: 'member', idx: i });
         }
@@ -182,7 +194,8 @@ function renderGrid() {
         else if (e.icon) icons.push(`<i class='fa ${e.icon} cell-icon'></i>`);
         if (isMobile()) {
           cell.ontouchstart = (e) => { e.preventDefault(); showCellDetail({ ...e, type: 'event', idx: i }); };
-          cell.ontouchend = cell.ontouchcancel = hideFloatCard;
+          cell.ontouchend = () => hideFloatCard();
+          cell.ontouchcancel = () => hideFloatCard(true);
         } else {
           cell.onclick = () => showCellDetail({ ...e, type: 'event', idx: i });
         }
@@ -191,7 +204,8 @@ function renderGrid() {
     if (i === idx) {
       if (isMobile()) {
         cell.ontouchstart = (e) => { e.preventDefault(); showCellDetail({ type: 'user', idx }); };
-        cell.ontouchend = cell.ontouchcancel = hideFloatCard;
+        cell.ontouchend = () => hideFloatCard();
+        cell.ontouchcancel = () => hideFloatCard(true);
       } else {
         cell.onclick = () => showCellDetail({ type: 'user', idx });
       }
@@ -200,7 +214,8 @@ function renderGrid() {
       const monthStr = getMonthByIndex(birthday, i);
       if (isMobile()) {
         cell.ontouchstart = (e) => { e.preventDefault(); showCellDetail({ type: 'empty', idx: i, monthStr }); };
-        cell.ontouchend = cell.ontouchcancel = hideFloatCard;
+        cell.ontouchend = () => hideFloatCard();
+        cell.ontouchcancel = () => hideFloatCard(true);
       } else {
         cell.onclick = () => showCellDetail({ type: 'empty', idx: i, monthStr });
       }
