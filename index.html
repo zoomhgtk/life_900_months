@@ -73,9 +73,30 @@
   <!-- 侧边栏 -->
   <div class="sidebar-bg" id="sidebarBg" hidden></div>
   <div class="sidebar" id="sidebar" hidden>
-    <h3>人生成员</h3>
-    <div class="section">
-      <form id="addMemberForm">
+    <h3>配置</h3>
+    <div class="section entry-section">
+      <button class="entry-button" id="openMemberManager" type="button">
+        <span>编辑人生成员</span>
+        <small>人生重要成员的人生进程叠加到您的人生进程视图</small>
+      </button>
+      <button class="entry-button" id="openEventManager" type="button">
+        <span>编辑人生重要月份节点</span>
+        <small>本人重要的月份节点，叠加显示在您的人生进程</small>
+      </button>
+    </div>
+    <button class="close-sidebar-button" onclick="closeSidebar()">关闭</button>
+  </div>
+
+  <!-- 成员管理面板 -->
+  <div class="manager-bg" id="memberManagerBg" hidden>
+    <div class="manager-sheet">
+      <div class="manager-header">
+        <button class="manager-close" id="closeMemberManager" type="button"><i class="fa fa-times"></i></button>
+        <h2>人生成员</h2>
+        <button class="manager-add" id="showMemberForm" type="button"><i class="fa fa-plus"></i></button>
+      </div>
+      <div class="manager-list" id="memberList"></div>
+      <form class="manager-form" id="addMemberForm" hidden>
         <input class="member-title-input" type="text" id="memberTitle" placeholder="成员名称" required>
         <div class="form-row">
           <span class="form-label">生日</span>
@@ -89,13 +110,24 @@
           <input class="image-input" type="file" id="memberImg" accept="image/*">
           <div class="avatar-preview" id="memberAvatarPreview" hidden></div>
         </div>
-        <button class="submit-button" type="submit">添加成员</button>
+        <div class="manager-form-actions">
+          <button class="secondary-button" id="cancelMemberForm" type="button">取消</button>
+          <button class="submit-button" type="submit">添加成员</button>
+        </div>
       </form>
-      <div class="member-list" id="memberList"></div>
     </div>
-    <h3>重要月份</h3>
-    <div class="section">
-      <form id="addEventForm">
+  </div>
+
+  <!-- 重要月份管理面板 -->
+  <div class="manager-bg" id="eventManagerBg" hidden>
+    <div class="manager-sheet">
+      <div class="manager-header">
+        <button class="manager-close" id="closeEventManager" type="button"><i class="fa fa-times"></i></button>
+        <h2>重要月份</h2>
+        <button class="manager-add" id="showEventForm" type="button"><i class="fa fa-plus"></i></button>
+      </div>
+      <div class="manager-list" id="eventList"></div>
+      <form class="manager-form" id="addEventForm" hidden>
         <label>名称</label>
         <input type="text" id="eventName" placeholder="如：高考、结婚..." required>
         <div class="form-row">
@@ -112,11 +144,12 @@
           <emoji-picker class="emoji-picker-popover" id="eventEmojiPicker" hidden></emoji-picker>
           <input class="image-input" type="file" id="eventImg" accept="image/*">
         </div>
-        <button class="submit-button" type="submit">添加重要月份</button>
+        <div class="manager-form-actions">
+          <button class="secondary-button" id="cancelEventForm" type="button">取消</button>
+          <button class="submit-button" type="submit">添加重要月份</button>
+        </div>
       </form>
-      <div class="event-list" id="eventList"></div>
     </div>
-    <button class="close-sidebar-button" onclick="closeSidebar()">关闭</button>
   </div>
 
   <script src="main.js"></script>

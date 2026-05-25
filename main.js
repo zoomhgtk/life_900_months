@@ -104,10 +104,7 @@ function hideFloatCard(immediate = false) {
 function openSidebar() {
   document.getElementById('sidebar').hidden = false;
   document.getElementById('sidebarBg').hidden = false;
-  renderMemberList();
-  renderEventList();
-  initMemberMonthPicker();
-  initEventMonthPicker();
+
 }
 function closeSidebar() {
   document.getElementById('sidebar').hidden = true;
@@ -158,8 +155,8 @@ function renderGrid() {
   const now = getNowMonth();
   const idx = getMonthIndex(birthday, now);
   // 取成员和事件
-  const members = loadData('members', []);
-  const events = loadData('events', []);
+  const members = loadData('members', []).filter(item => item.visible !== false);
+  const events = loadData('events', []).filter(item => item.visible !== false);
   // 生成900格
   for (let i = 0; i < 900; i++) {
     const cell = document.createElement('div');
@@ -229,10 +226,22 @@ function renderGrid() {
 function renderMemberList() {
   const list = document.getElementById('memberList');
   const members = loadData('members', []);
-  list.innerHTML = '';
+  list.innerHTML = members.length ? '' : `<div class='empty-list'>还没有成员</div>`;
   members.forEach((m, i) => {
-    let icon = m.img ? `<img src='${m.img}'>` : `<i class='fa fa-user-circle'></i>`;
-    list.innerHTML += `<div class='member-item'>${icon} ${m.title} (${m.birthday}) <button class='icon-btn' onclick='delMember(${i})'><i class='fa fa-trash'></i></button></div>`;
+    const icon = m.img ? `<img src='${m.img}' alt=''>` : `<i class='fa fa-user-circle'></i>`;
+    const checked = m.visible === false ? '' : 'checked';
+    list.innerHTML += `
+      <div class='manager-item'>
+        <button class='delete-text-btn' onclick='delMember(${i})'>删除</button>
+        <button class='manager-item-main' onclick='editMember(${i})' type='button'>
+          <span class='manager-item-icon'>${icon}</span>
+          <span class='manager-item-copy'><b>${m.title || '未命名成员'}</b><small>${m.birthday}</small></span>
+        </button>
+        <label class='switch'>
+          <input type='checkbox' ${checked} onchange='toggleMemberVisible(${i}, this.checked)'>
+          <span></span>
+        </label>
+      </div>`;
   });
 }
 function delMember(idx) {
@@ -241,6 +250,16 @@ function delMember(idx) {
   saveData('members', members);
   renderMemberList();
   renderGrid();
+}
+function toggleMemberVisible(idx, visible) {
+  let members = loadData('members', []);
+  if (!members[idx]) return;
+  members[idx].visible = visible;
+  saveData('members', members);
+  renderGrid();
+}
+function editMember(idx) {
+  alert('编辑成员将在下一阶段实现');
 }
 // 初始化成员年月picker
 function initMemberMonthPicker() {
@@ -283,10 +302,22 @@ document.getElementById('addMemberForm').onsubmit = function(e) {
 function renderEventList() {
   const list = document.getElementById('eventList');
   const events = loadData('events', []);
-  list.innerHTML = '';
+  list.innerHTML = events.length ? '' : `<div class='empty-list'>还没有重要月份</div>`;
   events.forEach((e, i) => {
-    let icon = e.emoji ? `<span>${e.emoji}</span>` : e.img ? `<img src='${e.img}'>` : e.icon ? `<i class='fa ${e.icon}'></i>` : '';
-    list.innerHTML += `<div class='event-item'>${icon} ${e.name} (${e.month}) <button class='icon-btn' onclick='delEvent(${i})'><i class='fa fa-trash'></i></button></div>`;
+    const icon = e.emoji ? `<span>${e.emoji}</span>` : e.img ? `<img src='${e.img}' alt=''>` : `<i class='fa fa-calendar'></i>`;
+    const checked = e.visible === false ? '' : 'checked';
+    list.innerHTML += `
+      <div class='manager-item'>
+        <button class='delete-text-btn' onclick='delEvent(${i})'>删除</button>
+        <button class='manager-item-main' onclick='editEvent(${i})' type='button'>
+          <span class='manager-item-icon'>${icon}</span>
+          <span class='manager-item-copy'><b>${e.name || '未命名月份'}</b><small>${e.month}</small></span>
+        </button>
+        <label class='switch'>
+          <input type='checkbox' ${checked} onchange='toggleEventVisible(${i}, this.checked)'>
+          <span></span>
+        </label>
+      </div>`;
   });
 }
 function delEvent(idx) {
@@ -295,6 +326,16 @@ function delEvent(idx) {
   saveData('events', events);
   renderEventList();
   renderGrid();
+}
+function toggleEventVisible(idx, visible) {
+  let events = loadData('events', []);
+  if (!events[idx]) return;
+  events[idx].visible = visible;
+  saveData('events', events);
+  renderGrid();
+}
+function editEvent(idx) {
+  alert('编辑重要月份将在下一阶段实现');
 }
 // 初始化事件年月picker
 function initEventMonthPicker() {
@@ -323,10 +364,11 @@ document.getElementById('addEventForm').onsubmit = function(e) {
   if (!name || !month) return alert('请填写完整');
   const add = (img) => {
     let events = loadData('events', []);
-    events.push({ name, month, emoji, img });
+    events.push({ name, month, emoji, img, visible: true });
     saveData('events', events);
     renderEventList();
     renderGrid();
+    hideEventForm();
     document.getElementById('addEventForm').reset();
     initEventMonthPicker();
   };
@@ -456,6 +498,50 @@ avatarCropModal.addEventListener('click', (e) => {
   if (e.target === avatarCropModal) closeAvatarCrop(true);
 });
 
+
+// 管理面板
+const memberManagerBg = document.getElementById('memberManagerBg');
+const eventManagerBg = document.getElementById('eventManagerBg');
+const memberForm = document.getElementById('addMemberForm');
+const eventForm = document.getElementById('addEventForm');
+function openMemberManager() {
+  memberManagerBg.hidden = false;
+  renderMemberList();
+  initMemberMonthPicker();
+}
+function closeMemberManager() {
+  memberManagerBg.hidden = true;
+  hideMemberForm();
+}
+function showMemberForm() {
+  memberForm.hidden = false;
+  initMemberMonthPicker();
+}
+function hideMemberForm() {
+  memberForm.hidden = true;
+  memberAvatarData = '';
+  document.getElementById('memberAvatarPreview').hidden = true;
+  document.getElementById('memberAvatarPreview').innerHTML = '';
+  document.getElementById('addMemberForm').reset();
+}
+function openEventManager() {
+  eventManagerBg.hidden = false;
+  renderEventList();
+  initEventMonthPicker();
+}
+function closeEventManager() {
+  eventManagerBg.hidden = true;
+  hideEventForm();
+}
+function showEventForm() {
+  eventForm.hidden = false;
+  initEventMonthPicker();
+}
+function hideEventForm() {
+  eventForm.hidden = true;
+  document.getElementById('addEventForm').reset();
+}
+
 // 头像/登录原型
 document.getElementById('avatarBtn').onclick = function() {
   alert('原型：注册/登录功能，后续实现。');
@@ -463,6 +549,16 @@ document.getElementById('avatarBtn').onclick = function() {
 // 侧边栏按钮
 document.getElementById('sidebarBtn').onclick = openSidebar;
 document.getElementById('sidebarBg').onclick = closeSidebar;
+document.getElementById('openMemberManager').onclick = openMemberManager;
+document.getElementById('openEventManager').onclick = openEventManager;
+document.getElementById('closeMemberManager').onclick = closeMemberManager;
+document.getElementById('closeEventManager').onclick = closeEventManager;
+document.getElementById('showMemberForm').onclick = showMemberForm;
+document.getElementById('showEventForm').onclick = showEventForm;
+document.getElementById('cancelMemberForm').onclick = hideMemberForm;
+document.getElementById('cancelEventForm').onclick = hideEventForm;
+document.getElementById('memberManagerBg').onclick = function(e) { if (e.target === this) closeMemberManager(); };
+document.getElementById('eventManagerBg').onclick = function(e) { if (e.target === this) closeEventManager(); };
 // 格子详情弹窗关闭
 document.getElementById('cellDetailModal').onclick = function(e) {
   if (e.target === this) closeCellDetail();
