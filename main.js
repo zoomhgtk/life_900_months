@@ -121,8 +121,8 @@ function showCellDetail(cellInfo) {
     if (cellInfo.img) html += `<img class='cell-detail-img' src='${cellInfo.img}'>`;
     html += `<div><b>你自己</b><br>第${cellInfo.idx + 1}个月</div>`;
   } else if (cellInfo.type === 'member') {
-    if (cellInfo.emoji) html += `<div class='cell-detail-emoji'>${cellInfo.emoji}</div>`;
     if (cellInfo.img) html += `<img class='cell-detail-img' src='${cellInfo.img}'>`;
+    else html += `<div class='cell-detail-emoji'><i class='fa fa-user-circle'></i></div>`;
     html += `<div><b>${cellInfo.title}</b><br>第${cellInfo.idx + 1}个月</div>`;
   } else if (cellInfo.type === 'event') {
     if (cellInfo.emoji) html += `<div class='cell-detail-emoji'>${cellInfo.emoji}</div>`;
@@ -172,9 +172,8 @@ function renderGrid() {
       const mIdx = getMonthIndex(m.birthday, now);
       if (i === mIdx) {
         hasMember = true;
-        if (m.emoji) icons.push(`<span class='cell-icon'>${m.emoji}</span>`);
-        else if (m.img) icons.push(`<img class='cell-img' src='${m.img}'>`);
-        else if (m.icon) icons.push(`<i class='fa ${m.icon} cell-icon'></i>`);
+        if (m.img) icons.push(`<img class='cell-img' src='${m.img}'>`);
+        else icons.push(`<i class='fa fa-user cell-icon'></i>`);
         if (isMobile()) {
           cell.ontouchstart = (e) => { e.preventDefault(); showCellDetail({ ...m, type: 'member', idx: i }); };
           cell.ontouchend = () => hideFloatCard();
@@ -232,7 +231,7 @@ function renderMemberList() {
   const members = loadData('members', []);
   list.innerHTML = '';
   members.forEach((m, i) => {
-    let icon = m.emoji ? `<span>${m.emoji}</span>` : m.img ? `<img src='${m.img}'>` : m.icon ? `<i class='fa ${m.icon}'></i>` : '';
+    let icon = m.img ? `<img src='${m.img}'>` : `<i class='fa fa-user-circle'></i>`;
     list.innerHTML += `<div class='member-item'>${icon} ${m.title} (${m.birthday}) <button class='icon-btn' onclick='delMember(${i})'><i class='fa fa-trash'></i></button></div>`;
   });
 }
@@ -259,26 +258,26 @@ function initMemberMonthPicker() {
   yearSel.value = now.getFullYear();
   monthSel.value = String(now.getMonth() + 1).padStart(2, '0');
 }
+let memberAvatarData = '';
 document.getElementById('addMemberForm').onsubmit = function(e) {
   e.preventDefault();
   const title = document.getElementById('memberTitle').value.trim();
   const y = document.getElementById('memberYearPicker').value;
   const m = document.getElementById('memberMonthPicker').value;
   const birthday = `${y}-${m}`;
-  const emoji = document.getElementById('memberEmoji').value.trim();
-  const imgFile = document.getElementById('memberImg').files[0];
+  if (!title) return alert('请填写成员名称');
   if (!birthday) return alert('请选择生日');
-  const add = (img) => {
-    let members = loadData('members', []);
-    members.push({ title, birthday, emoji, img });
-    saveData('members', members);
-    renderMemberList();
-    renderGrid();
-    document.getElementById('addMemberForm').reset();
-    initMemberMonthPicker();
-  };
-  if (imgFile) readFileAsDataURL(imgFile, add);
-  else add('');
+  if (!memberAvatarData) return alert('请上传并裁切头像');
+  let members = loadData('members', []);
+  members.push({ title, birthday, img: memberAvatarData });
+  saveData('members', members);
+  renderMemberList();
+  renderGrid();
+  document.getElementById('addMemberForm').reset();
+  memberAvatarData = '';
+  document.getElementById('memberAvatarPreview').hidden = true;
+  document.getElementById('memberAvatarPreview').innerHTML = '';
+  initMemberMonthPicker();
 };
 // 事件管理
 function renderEventList() {
@@ -334,6 +333,129 @@ document.getElementById('addEventForm').onsubmit = function(e) {
   if (imgFile) readFileAsDataURL(imgFile, add);
   else add('');
 };
+
+// 成员头像裁切
+const memberImgInput = document.getElementById('memberImg');
+const memberAvatarPreview = document.getElementById('memberAvatarPreview');
+const avatarCropModal = document.getElementById('avatarCropModal');
+const avatarCropCanvas = document.getElementById('avatarCropCanvas');
+const avatarZoom = document.getElementById('avatarZoom');
+const avatarCropClose = document.getElementById('avatarCropClose');
+const avatarCropCancel = document.getElementById('avatarCropCancel');
+const avatarCropApply = document.getElementById('avatarCropApply');
+const avatarCropCtx = avatarCropCanvas.getContext('2d');
+const avatarCropState = {
+  image: null,
+  baseScale: 1,
+  zoom: 1,
+  offsetX: 0,
+  offsetY: 0,
+  dragging: false,
+  lastX: 0,
+  lastY: 0
+};
+function drawAvatarCrop() {
+  const size = avatarCropCanvas.width;
+  avatarCropCtx.clearRect(0, 0, size, size);
+  avatarCropCtx.fillStyle = '#eee9df';
+  avatarCropCtx.fillRect(0, 0, size, size);
+  if (!avatarCropState.image) return;
+  const scale = avatarCropState.baseScale * avatarCropState.zoom;
+  const w = avatarCropState.image.width * scale;
+  const h = avatarCropState.image.height * scale;
+  avatarCropCtx.drawImage(avatarCropState.image, avatarCropState.offsetX, avatarCropState.offsetY, w, h);
+}
+function clampAvatarCrop() {
+  if (!avatarCropState.image) return;
+  const size = avatarCropCanvas.width;
+  const scale = avatarCropState.baseScale * avatarCropState.zoom;
+  const w = avatarCropState.image.width * scale;
+  const h = avatarCropState.image.height * scale;
+  avatarCropState.offsetX = Math.min(0, Math.max(size - w, avatarCropState.offsetX));
+  avatarCropState.offsetY = Math.min(0, Math.max(size - h, avatarCropState.offsetY));
+}
+function openAvatarCrop(src) {
+  const image = new Image();
+  image.onload = () => {
+    const size = avatarCropCanvas.width;
+    avatarCropState.image = image;
+    avatarCropState.baseScale = Math.max(size / image.width, size / image.height);
+    avatarCropState.zoom = 1;
+    avatarZoom.value = '1';
+    const w = image.width * avatarCropState.baseScale;
+    const h = image.height * avatarCropState.baseScale;
+    avatarCropState.offsetX = (size - w) / 2;
+    avatarCropState.offsetY = (size - h) / 2;
+    avatarCropModal.hidden = false;
+    drawAvatarCrop();
+  };
+  image.src = src;
+}
+function closeAvatarCrop(clearInput = false) {
+  avatarCropModal.hidden = true;
+  avatarCropState.image = null;
+  if (clearInput) memberImgInput.value = '';
+}
+memberImgInput.addEventListener('change', () => {
+  const file = memberImgInput.files[0];
+  if (!file) return;
+  readFileAsDataURL(file, openAvatarCrop);
+});
+avatarZoom.addEventListener('input', () => {
+  avatarCropState.zoom = Number(avatarZoom.value);
+  clampAvatarCrop();
+  drawAvatarCrop();
+});
+avatarCropCanvas.addEventListener('pointerdown', (e) => {
+  avatarCropState.dragging = true;
+  avatarCropState.lastX = e.clientX;
+  avatarCropState.lastY = e.clientY;
+  avatarCropCanvas.setPointerCapture(e.pointerId);
+});
+avatarCropCanvas.addEventListener('pointermove', (e) => {
+  if (!avatarCropState.dragging) return;
+  avatarCropState.offsetX += e.clientX - avatarCropState.lastX;
+  avatarCropState.offsetY += e.clientY - avatarCropState.lastY;
+  avatarCropState.lastX = e.clientX;
+  avatarCropState.lastY = e.clientY;
+  clampAvatarCrop();
+  drawAvatarCrop();
+});
+avatarCropCanvas.addEventListener('pointerup', () => {
+  avatarCropState.dragging = false;
+});
+avatarCropCanvas.addEventListener('pointercancel', () => {
+  avatarCropState.dragging = false;
+});
+avatarCropApply.addEventListener('click', () => {
+  if (!avatarCropState.image) return;
+  const output = document.createElement('canvas');
+  const outputSize = 256;
+  const ratio = outputSize / avatarCropCanvas.width;
+  output.width = outputSize;
+  output.height = outputSize;
+  const ctx = output.getContext('2d');
+  const scale = avatarCropState.baseScale * avatarCropState.zoom * ratio;
+  ctx.fillStyle = '#eee9df';
+  ctx.fillRect(0, 0, outputSize, outputSize);
+  ctx.drawImage(
+    avatarCropState.image,
+    avatarCropState.offsetX * ratio,
+    avatarCropState.offsetY * ratio,
+    avatarCropState.image.width * scale,
+    avatarCropState.image.height * scale
+  );
+  memberAvatarData = output.toDataURL('image/jpeg', 0.9);
+  memberAvatarPreview.innerHTML = `<img src='${memberAvatarData}' alt='成员头像预览'>`;
+  memberAvatarPreview.hidden = false;
+  closeAvatarCrop();
+});
+avatarCropClose.addEventListener('click', () => closeAvatarCrop(true));
+avatarCropCancel.addEventListener('click', () => closeAvatarCrop(true));
+avatarCropModal.addEventListener('click', (e) => {
+  if (e.target === avatarCropModal) closeAvatarCrop(true);
+});
+
 // 头像/登录原型
 document.getElementById('avatarBtn').onclick = function() {
   alert('原型：注册/登录功能，后续实现。');
@@ -345,22 +467,6 @@ document.getElementById('sidebarBg').onclick = closeSidebar;
 document.getElementById('cellDetailModal').onclick = function(e) {
   if (e.target === this) closeCellDetail();
 };
-// 成员emoji选择
-const memberEmojiBtn = document.getElementById('memberEmojiBtn');
-const memberEmojiPicker = document.getElementById('memberEmojiPicker');
-const memberEmojiInput = document.getElementById('memberEmoji');
-memberEmojiBtn.onclick = function(e) {
-  memberEmojiPicker.hidden = !memberEmojiPicker.hidden;
-  // 定位到按钮下方
-  const rect = memberEmojiBtn.getBoundingClientRect();
-  memberEmojiPicker.style.position = 'fixed';
-  memberEmojiPicker.style.left = rect.left + 'px';
-  memberEmojiPicker.style.top = (rect.bottom + 5) + 'px';
-};
-memberEmojiPicker.addEventListener('emoji-click', event => {
-  memberEmojiInput.value = event.detail.unicode;
-  memberEmojiPicker.hidden = true;
-});
 // 重要月份emoji选择
 const eventEmojiBtn = document.getElementById('eventEmojiBtn');
 const eventEmojiPicker = document.getElementById('eventEmojiPicker');

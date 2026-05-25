@@ -52,6 +52,24 @@
     </div>
   </div>
 
+  <!-- 成员头像裁切弹窗 -->
+  <div class="modal-bg" id="avatarCropModal" hidden>
+    <div class="modal avatar-crop-modal">
+      <button class="close-btn" id="avatarCropClose" type="button"><i class="fa fa-times"></i></button>
+      <h2>调整头像</h2>
+      <div class="avatar-crop-stage">
+        <canvas id="avatarCropCanvas" width="280" height="280"></canvas>
+        <div class="avatar-crop-frame"></div>
+      </div>
+      <label class="avatar-zoom-label" for="avatarZoom">缩放</label>
+      <input class="avatar-zoom" id="avatarZoom" type="range" min="1" max="3" step="0.01" value="1">
+      <div class="modal-actions">
+        <button class="secondary-button" id="avatarCropCancel" type="button">取消</button>
+        <button id="avatarCropApply" type="button">使用头像</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 侧边栏 -->
   <div class="sidebar-bg" id="sidebarBg" hidden></div>
   <div class="sidebar" id="sidebar" hidden>
@@ -66,12 +84,10 @@
           <select id="memberMonthPicker"></select>
           <span class="form-label">月</span>
         </div>
-        <label>头像/图标</label>
-        <div class="emoji-input-row">
-          <input class="emoji-input" type="text" id="memberEmoji" maxlength="2" placeholder="😀">
-          <button class="emoji-button" type="button" id="memberEmojiBtn">😀</button>
-          <emoji-picker class="emoji-picker-popover" id="memberEmojiPicker" hidden></emoji-picker>
+        <label>头像</label>
+        <div class="avatar-upload-row">
           <input class="image-input" type="file" id="memberImg" accept="image/*">
+          <div class="avatar-preview" id="memberAvatarPreview" hidden></div>
         </div>
         <button class="submit-button" type="submit">添加成员</button>
       </form>
